@@ -71,8 +71,67 @@ MHRAG_LLM__MODEL=qwen2.5-1.5b-gguf uvicorn server.app:app --port 8000
 Open <http://localhost:8000>. Use `MHRAG_LLM__MODEL=mock` for an instant, download-free UI test, and switch models
 in the UI. Models that need an API key are hidden unless `MHRAG_LLM__ALLOW_API_MODELS=true` (plus the key) is set.
 
-Docker: `docker compose up --build` serves the app on http://localhost:8000. Public deployment (Hugging Face Space, Render,
-Railway): see [DEPLOY.md](DEPLOY.md).
+To run it in a container instead, see [Run it with Docker](#run-it-with-docker). Public deployment (Hugging Face Space,
+Render, Railway): see [DEPLOY.md](DEPLOY.md).
+
+## Run it with Docker
+
+### What it looks like
+
+If you only want to see the interface, these screenshots are from the Docker build below (laptop, CPU only):
+
+| Start page | An answer with its sources |
+|---|---|
+| ![Start page: disclaimer, model and helpline pickers, suggested questions](docs/screenshots/start-page.png) | ![The end of an answer, with the expandable list of cited Mind pages and the time to first token](docs/screenshots/answer-with-sources.png) |
+
+Each answer cites the passages it used (click **Sources** to see them, with links to the original pages). Messages that
+suggest a crisis never reach the model: the risk gate answers with a fixed safety message and regional helplines.
+
+### How the pieces fit
+
+- **FastAPI** (`server/app.py`) is the web app. At start-up it loads the search index, the safety gate and the language
+  model once, then serves the chat page (`/`), the streaming chat API (`POST /api/chat`), a health check
+  (`/api/health`) and interactive API docs (`/api/docs`). **uvicorn** runs it on port 7860.
+- **Docker** packages the app with everything it needs (Python, the libraries, llama.cpp, the models and the search
+  index) into one image, so it runs the same on any machine with Docker. The [Dockerfile](Dockerfile) is the recipe;
+  [docker-compose.yml](docker-compose.yml) starts the container and maps your port 8000 to the app's port 7860.
+
+### Running it yourself
+
+You need:
+
+- **Docker**: [Docker Desktop](https://www.docker.com/products/docker-desktop/) on macOS or Windows, or Docker Engine
+  with the Compose plugin on Linux. The running container uses about 1 GB of memory; the image is about 4 GB, and the
+  first build needs about 7 GB more of temporary build cache.
+- **The knowledge-base data.** It is not in this repository (third-party material; see
+  [Data sources and licences](#data-sources-and-licences)), so obtain the sources yourself and place them at
+  `data/raw_data.zip` in the layout shown there. The build turns them into the search index. Without them the image
+  still builds, but the app stops at start-up with "Cannot start: ... index" in its log, because it has nothing to
+  search.
+
+Then, from a terminal:
+
+```bash
+git clone https://github.com/aryansharma0326/MentalHealthRAG.git
+cd MentalHealthRAG
+# copy your raw_data.zip to data/raw_data.zip
+docker compose up -d --build
+```
+
+The first build downloads the models and builds the index; it took about 5 minutes on a recent laptop and is quicker
+after that. When it finishes, open <http://localhost:8000>. Useful commands:
+
+| What | Command |
+|---|---|
+| Is it ready? | `curl http://localhost:8000/api/health` (or `docker compose ps`: the status shows `healthy`) |
+| Follow the server log | `docker compose logs -f app` |
+| Stop it | `docker compose down` |
+| Rebuild after changing the code | `docker compose up -d --build` |
+| Use another port | change `"8000:7860"` in `docker-compose.yml` to e.g. `"8080:7860"` |
+
+The model runs on the CPU inside the container (Docker on macOS cannot use the Mac GPU), so the first words of an
+answer take about 10 seconds and a full answer about 20. The image contains the knowledge-base content, so keep it to
+your own machine: do not push it to a public registry such as Docker Hub.
 
 ## Configuration
 
@@ -216,9 +275,9 @@ Tests: `pytest` (offline; uses a mock LLM and a hand-built fixture corpus). Lint
 ### Running the Kaggle notebook: private or public repository
 
 Cell 3 of [notebooks/kaggle_experiments.ipynb](notebooks/kaggle_experiments.ipynb) clones the code from GitHub. By default
-it clones this public repository, [HellDragger/MentalHealthRAG](https://github.com/HellDragger/MentalHealthRAG), which
+it clones this public repository, [aryansharma0326/MentalHealthRAG](https://github.com/aryansharma0326/MentalHealthRAG), which
 holds the code, evaluation data and results, so every result can be reproduced from it. The manuscript is kept in a
-separate **private** repository, `HellDragger/MentalHealthRAG-Chatbot`, until the paper is accepted; its code was
+separate **private** repository, `aryansharma0326/MentalHealthRAG-Chatbot`, until the paper is accepted; its code was
 developed there first, which is why the notebook can also clone a private repository.
 
 **To reproduce the results (anyone):** keep the defaults (`REPO_URL` in cell 3, `BRANCH = "main"` in cell 1). A public
