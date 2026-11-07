@@ -386,7 +386,7 @@ def main():
                "but were phrased as general questions without a first-person pronoun"
                + (f" (``{tex_esc(ex.rstrip('?'))}?'')" if ex else "")
                + ", so the informational-question guard, which keeps factual questions from being escalated, overrode "
-               "the classifier, and the lexicon's method patterns did not match their wording. I left the gate "
+               "the classifier, and the lexicon's method patterns did not match their wording. We left the gate "
                "unchanged after seeing these results so that the held-out set stays held out; exempting method "
                "questions from the guard is the obvious fix, and it needs a new held-out set to evaluate.", c_hm)
     else:
@@ -400,7 +400,7 @@ def main():
         need = nr // 2 + 1
         ans, nat = cr["answerable"], cr["natural"]
         m.text("SynthVerifySummary",
-               f"{WORDS.get(nr, str(nr))} raters, including me, independently judged a random {k}-question subset: whether the "
+               f"{WORDS.get(nr, str(nr))} raters, including the first author, independently judged a random {k}-question subset: whether the "
                "source passage answers the question, and whether the question reads like one a person would ask. "
                f"With every rater weighted equally and an item counted only when at least {need} of {nr} said yes "
                f"(ties fail), {ans['pass_strict_majority']} were answerable, {nat['pass_strict_majority']} natural and "
@@ -424,7 +424,7 @@ def main():
                      "AC1 w/o author"], rows,
                     f"Human verification of {k} SynthQA questions by {nr} raters. Pass: at least {need} of {nr} raters "
                     "said yes (Wilson 95\\% CI); " + (f"Ties: questions on which {nr // 2} of {nr} raters said yes; " if nr % 2 == 0 else "") + "Raw agr.: mean agreement over rater pairs; $\\kappa$ "
-                    "and AC1 with 95\\% bootstrap CIs; AC1 w/o author: AC1 without my own ratings.",
+                    "and AC1 with 95\\% bootstrap CIs; AC1 w/o author: AC1 without the first author's ratings.",
                     "tab:synthqa-verification", source="results/synth_qa_verification.json")
         rr = sv.get("retrieval_robustness")
         if rr:
@@ -829,10 +829,10 @@ def main():
                 r0 = rs_[0]
                 ns_, ss_ = r0["strata"]["nli_unsupported"], r0["strata"]["nli_supported"]
                 lo_, hi_ = r0["corrected_ci"]
-                txt_ck = (f"To check whether the NLI model is too strict, I labelled {ck['pairs']} (sentence, cited "
+                txt_ck = (f"To check whether the NLI model is too strict, the first author labelled {ck['pairs']} (sentence, cited "
                           "passage) pairs by hand, sampled from the deployed and benchmark models and blind to the NLI "
                           f"verdict ({ss_['n']} that NLI counted as entailed, {ns_['n']} that it did not). Of the "
-                          f"{ns_['n']} that NLI rejected, I judged {ns_['supported']} supported and {ns_['partly']} partly "
+                          f"{ns_['n']} that NLI rejected, {ns_['supported']} were judged supported and {ns_['partly']} partly "
                           f"supported; of the {ss_['n']} it accepted, {ss_['supported']} supported (agreement with NLI "
                           f"{r0['agreement']:.2f}, $\\kappa={r0['cohen_kappa']:.2f}$). Weighting each group by its share of "
                           f"all {ck['population']['pairs']} citation pairs, the estimated citation precision is "
@@ -1088,7 +1088,7 @@ def main():
                 ck0 = next(iter(ck_["raters"].values()))
                 lo_c, hi_c = ck0["corrected_ci"]
                 txt += (f" NLI judged {100 * loc_p:.0f}\\% of the deployed model's citations supported; a blinded "
-                        f"hand check of {ck_['pairs']} citation pairs by the author suggested NLI was too strict "
+                        f"hand check of {ck_['pairs']} citation pairs by the first author suggested NLI was too strict "
                         f"(estimated {100 * cor_[0]:.0f}\\% of citations across models supported, 95\\% CI "
                         f"{100 * lo_c:.0f}--{100 * hi_c:.0f}\\%).")
             else:
